@@ -3,3 +3,7 @@
 # 测试-dxc-9-2
 测试-dxc-9-2
 # 测试协同
+
+hello lxd
+
+hello lxd2
