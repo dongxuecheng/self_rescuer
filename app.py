@@ -1,6 +1,7 @@
 import threading
 import time
 from flask import Flask, jsonify,send_from_directory
+from compressed_oxygen_detect import init_compressed_oxygen_detection,start_compressed_oxygen_detection
 from globals import inference_thread, stop_event,lock,redis_client
 
 #焊接考核的穿戴
@@ -96,4 +97,4 @@ def get_image(filename):
 if __name__ == '__main__':
 
     # Start the Flask server
-    app.run(debug=False, host='172.16.20.163', port=5001)
+    app.run(debug=False, host='172.16.20.163', port=5007)
