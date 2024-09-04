@@ -1,6 +1,6 @@
 import requests
 
-url = 'http://172.16.20.163:5007/compressed_oxygen_detection'
+url = 'http://127.0.0.1:5007/compressed_oxygen_detection'
 
 
 response = requests.get(url)
