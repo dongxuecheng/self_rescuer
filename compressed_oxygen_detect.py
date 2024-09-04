@@ -113,7 +113,7 @@ def process_video(model_path, video_source, start_event):
                         steps[5]=True
                         print("steps[5]:",steps[5])
                 
-                if step4_flag and not air_make_up_flag :
+                if step4_flag and not air_make_up_flag and steps[3]:
                     steps[4]=True
                     print("steps[4]:",steps[4])
 
