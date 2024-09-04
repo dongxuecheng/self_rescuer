@@ -10,6 +10,7 @@ from config import VIDEO_SOURCE,MODEL_PATH
 def init_compressed_oxygen_detection():
     for i, step in enumerate(steps):
         redis_client.set(f"compressed_oxygen_step_{i+1}",'False')
+    redis_client.delete("compressed_oxygen_order")
 
 def start_compressed_oxygen_detection(start_events):
         
