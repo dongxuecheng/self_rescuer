@@ -37,25 +37,17 @@ def compressed_oxygen_detection():
 @app.route('/compressed_oxygen_status', methods=['GET']) 
 def compressed_oxygen_status():#开始登录时，检测是否需要复位，若需要，则发送复位信息，否则开始焊接检测
     #global inference_thread
-    with lock:   
-        #TODO 若出现异常再发送FAIL.
-        redis_client.set("welding_wearing_detection_img_flag",'True')
-        time.sleep(1)
-        if not redis_client.exists("welding_wearing_items_nums") or not redis_client.exists("welding_wearing_detection_img"):
-            return jsonify({"status": "NONE"}), 200##表示穿戴检测线程还未检测完
-        
-        wearing_items_nums = redis_client.lrange("welding_wearing_items_nums", 0, -1)
-        wearing_items_list = ['pants', 'jacket', 'helmet', 'gloves', 'shoes']
+    with lock:           
+        compressed_oxygen_order = redis_client.lrange("compressed_oxygen_order", 0, -1)
+        # wearing_items_list = ['pants', 'jacket', 'helmet', 'gloves', 'shoes']
         json_array = []
-        for num, item in zip(wearing_items_nums, wearing_items_list):
-            json_object = {"name": item, "number": num}
+        for step in compressed_oxygen_order:
+            json_object = {"step": step}
             json_array.append(json_object)
 
         app.logger.info(json_array)
-        image=redis_client.get("welding_wearing_detection_img")
-        app.logger.info(image)
 
-        return jsonify({"status": "SUCCESS","data":json_array,"image":image}), 200
+        return jsonify({"status": "SUCCESS","data":json_array}), 200
 
                
 @app.route('/end_compressed_oxygen_detection', methods=['GET'])
@@ -97,4 +89,4 @@ def get_image(filename):
 if __name__ == '__main__':
 
     # Start the Flask server
-    app.run(debug=False, host='172.16.20.163', port=5007)
+    app.run(debug=False, host='127.0.0.1', port=5007)
