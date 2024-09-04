@@ -55,7 +55,7 @@ def process_video(model_path, video_source, start_event):
                 continue
 
             global step,hand_box,head_box
-            results = model.predict(frame,conf=0.6,verbose=False)
+            results = model.predict(frame,conf=0.2,verbose=False)
 
             for r in results:
                 boxes = r.boxes.xyxy  # 提取所有检测到的边界框坐标
@@ -91,7 +91,7 @@ def process_video(model_path, video_source, start_event):
 
                     if(label=='neckband'):
                         
-                        if(IoU(head_box,[x1,y1,x2,y2])>0 and steps[1]==False):
+                        if(IoU(head_box,[x1,y1,x2,y2])>0 and steps[1]==False and steps[0]==True):
                             steps[1]=True
                             print("steps[1]:",steps[1])
 
@@ -113,11 +113,11 @@ def process_video(model_path, video_source, start_event):
                         steps[5]=True
                         print("steps[5]:",steps[5])
                 
-                if step4_flag and air_make_up_flag :
+                if step4_flag and not air_make_up_flag :
                     steps[4]=True
                     print("steps[4]:",steps[4])
 
-                if IoU(head_box,hand_box)>0.5 and steps[5]==False:
+                if head_box != [0, 0, 0, 0] and hand_box != [0, 0, 0, 0] and IoU(head_box, hand_box) > 0 and steps[5] == False:
                     steps[5]=True
                     print("steps[5]:",steps[5])
                     
