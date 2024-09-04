@@ -12,8 +12,8 @@ lock=threading.Lock()
 ###############焊接考核
 #为True时，表示某一步骤完成,并保存图片post
 steps = [False] * 6
-head_box=[]
-hand_box=[]
+head_box=[0,0,0,0]
+hand_box=[0,0,0,0]
 # 压缩氧
 # 1 = 外壳去掉
 # 2 = 脖带戴好 

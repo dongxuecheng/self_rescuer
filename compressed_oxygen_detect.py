@@ -62,35 +62,46 @@ def process_video(model_path, video_source, start_event):
                 confidences = r.boxes.conf  # 提取所有检测到的置信度
                 classes = r.boxes.cls  # 提取所有检测到的类别索引
 
-                head_box=[]
-                hand_box=[]
+                head_box=[0,0,0,0]
+                hand_box=[0,0,0,0]
                 for i in range(len(boxes)):
                     x1, y1, x2, y2 = boxes[i].tolist()
                     confidence = confidences[i].item()
                     cls = int(classes[i].item())
                     label = model.names[cls]
-                    print("label:",label)
+                    #print("label:",label)
 
                     if(label=='head'):head_box=[x1,y1,x2,y2]
                     if(label=='hand'):hand_box=[x1,y1,x2,y2]
 
                     if(label=='aerostat_gasbag'):
                         steps[0]=True
-                        if(IoU(head_box,[x1,y1,x2,y2])>0.1):steps[2]=True
+                        print("steps[0]:",steps[0])
+                        if(IoU(head_box,[x1,y1,x2,y2])>0.1):
+                            steps[2]=True
+                            print("steps[2]:",steps[2])
 
                     if(label=='neckband'):
-                        if(IoU(head_box,[x1,y1,x2,y2])>0.1):steps[1]=True
+                        if(IoU(head_box,[x1,y1,x2,y2])>0.1):
+                            steps[1]=True
+                            print("steps[1]:",steps[1])
 
 
                     if(label=='valve'):
-                        if(IoU(hand_box,[x1,y1,x2,y2])>0.1):steps[2]=True
+                        if(IoU(hand_box,[x1,y1,x2,y2])>0.1):
+                            steps[2]=True
+                            print("steps[2]:",steps[2])
                     
                     if(label=='air make-up'):
                         steps[0]=True
-                        if(IoU(hand_box,[x1,y1,x2,y2])>0.1):steps[4]=True
-                        
+                        if(IoU(hand_box,[x1,y1,x2,y2])>0.1):
+                            steps[4]=True
+                            print("steps[4]:",steps[4])
+
                     if(label=='nose clip'):
-                        if(IoU(head_box,[x1,y1,x2,y2])>0.1):steps[5]=True
+                        if(IoU(head_box,[x1,y1,x2,y2])>0.1):
+                            steps[5]=True
+                            print("steps[5]:",steps[5])
                 
 
                 for i, step in enumerate(steps):
