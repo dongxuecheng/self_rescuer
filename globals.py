@@ -14,6 +14,7 @@ lock=threading.Lock()
 steps = [False] * 6
 head_box=[0,0,0,0]
 hand_box=[0,0,0,0]
+
 # 压缩氧
 # 1 = 外壳去掉
 # 2 = 脖带戴好 

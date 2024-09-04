@@ -64,6 +64,8 @@ def process_video(model_path, video_source, start_event):
 
                 head_box=[0,0,0,0]
                 hand_box=[0,0,0,0]
+                step4_flag=False
+                air_make_up_flag=False
                 for i in range(len(boxes)):
                     x1, y1, x2, y2 = boxes[i].tolist()
                     confidence = confidences[i].item()
@@ -75,35 +77,50 @@ def process_video(model_path, video_source, start_event):
                     if(label=='hand'):hand_box=[x1,y1,x2,y2]
 
                     if(label=='aerostat_gasbag'):
-                        steps[0]=True
-                        print("steps[0]:",steps[0])
-                        if(IoU(head_box,[x1,y1,x2,y2])>0.1):
+                        if steps[0]==False:
+                            steps[0]=True
+                            print("steps[0]:",steps[0])
+
+                        if(IoU(head_box,[x1,y1,x2,y2])>0 and steps[2]==False):
                             steps[2]=True
                             print("steps[2]:",steps[2])
+                        if(IoU(hand_box,[x1,y1,x2,y2])>0 and steps[4]==False):
+                            step4_flag=True
+                            #steps[4]=True
+                            #print("steps[4]:",steps[4])
 
                     if(label=='neckband'):
-                        if(IoU(head_box,[x1,y1,x2,y2])>0.1):
+                        
+                        if(IoU(head_box,[x1,y1,x2,y2])>0 and steps[1]==False):
                             steps[1]=True
                             print("steps[1]:",steps[1])
 
 
                     if(label=='valve'):
-                        if(IoU(hand_box,[x1,y1,x2,y2])>0.1):
-                            steps[2]=True
-                            print("steps[2]:",steps[2])
+                        if(IoU(hand_box,[x1,y1,x2,y2])>0 and steps[3]==False):
+                            steps[3]=True
+                            print("steps[3]:",steps[3])
                     
                     if(label=='air make-up'):
-                        steps[0]=True
-                        if(IoU(hand_box,[x1,y1,x2,y2])>0.1):
-                            steps[4]=True
-                            print("steps[4]:",steps[4])
+                        air_make_up_flag=True
+                        if steps[0]==False:
+                            steps[0]=True
+                            print("steps[0]:",steps[0])
 
-                    if(label=='nose clip'):
-                        if(IoU(head_box,[x1,y1,x2,y2])>0.1):
-                            steps[5]=True
-                            print("steps[5]:",steps[5])
+
+
+                    if(label=='nose clip' and steps[5]==False):
+                        steps[5]=True
+                        print("steps[5]:",steps[5])
                 
+                if step4_flag and air_make_up_flag :
+                    steps[4]=True
+                    print("steps[4]:",steps[4])
 
+                if IoU(head_box,hand_box)>0.5 and steps[5]==False:
+                    steps[5]=True
+                    print("steps[5]:",steps[5])
+                    
                 for i, step in enumerate(steps):
                     if step and redis_client.get(f"compressed_oxygen_step_{i+1}")=='False':
                         redis_client.rpush("compressed_oxygen_order", f"{i+1}")
