@@ -13,7 +13,7 @@ VIDEO_SOURCE = 'rtsp://admin:yaoan1234@192.169.1.114/cam/realmonitor?channel=1&s
 # Define paths to RTSP streams
 
 
-MODEL_PATH="/mnt/xcd/code/self_rescuer/weights/self_rescuer.pt"
+MODEL_PATH="weights/yolov8m-p2-self.pt"
 
 
 
