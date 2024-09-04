@@ -1,6 +1,5 @@
 import threading
-import time
-from flask import Flask, jsonify,send_from_directory
+from flask import Flask, jsonify
 from compressed_oxygen_detect import init_compressed_oxygen_detection,start_compressed_oxygen_detection
 from globals import inference_thread, stop_event,lock,redis_client
 
@@ -37,9 +36,13 @@ def compressed_oxygen_detection():
 @app.route('/compressed_oxygen_status', methods=['GET']) 
 def compressed_oxygen_status():#开始登录时，检测是否需要复位，若需要，则发送复位信息，否则开始焊接检测
     #global inference_thread
-    with lock:           
+    if not redis_client.exists('compressed_oxygen_order'):
+        app.logger.info('compressed_oxygen_order is none')
+
+        return jsonify({"status": "NONE"}), 200
+    
+    else:           
         compressed_oxygen_order = redis_client.lrange("compressed_oxygen_order", 0, -1)
-        # wearing_items_list = ['pants', 'jacket', 'helmet', 'gloves', 'shoes']
         json_array = []
         for step in compressed_oxygen_order:
             json_object = {"step": step}
@@ -79,11 +82,11 @@ def stop_inference():
         app.logger.info('No_detection_running')
         return jsonify({"status": "No_detection_running"}), 200
 
-@app.route('/images/<filename>')
-def get_image(filename):
-    app.logger.info('get_image'+filename)
-    #pdb.set_trace()
-    return send_from_directory('static/images', filename)
+# @app.route('/images/<filename>')
+# def get_image(filename):
+#     app.logger.info('get_image'+filename)
+#     #pdb.set_trace()
+#     return send_from_directory('static/images', filename)
 
 
 if __name__ == '__main__':
