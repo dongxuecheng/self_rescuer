@@ -40,7 +40,7 @@ def IoU(box1, box2):
  
     return overlap/union
 
-def process_video(model_path, video_source, start_event):
+def process_video(model_path, video_source, start_event,stop_event,steps,order):
 
     
     model = YOLO(model_path)
@@ -55,7 +55,7 @@ def process_video(model_path, video_source, start_event):
             if cap.get(cv2.CAP_PROP_POS_FRAMES) % 10 != 0:#跳帧检测，
                 continue
 
-            global step,hand_box,head_box
+            global hand_box,head_box
             results = model.predict(frame,conf=0.2,verbose=False)
 
             for r in results:
@@ -123,9 +123,11 @@ def process_video(model_path, video_source, start_event):
                     print("steps[5]:",steps[5])
                     
                 for i, step in enumerate(steps):
-                    if step and redis_client.get(f"compressed_oxygen_step_{i+1}")=='False':
-                        redis_client.rpush("compressed_oxygen_order", f"{i+1}")
-                        redis_client.set(f"compressed_oxygen_step_{i+1}",'True')
+                    # if step and redis_client.get(f"compressed_oxygen_step_{i+1}")=='False':
+                    #     redis_client.rpush("compressed_oxygen_order", f"{i+1}")
+                    #     redis_client.set(f"compressed_oxygen_step_{i+1}",'True')
+                    if step and i+1 not in order:
+                        order.append(i+1)
 
                 start_event.set()    
 

@@ -1,50 +1,75 @@
-import threading
-from flask import Flask, jsonify
-from compressed_oxygen_detect import init_compressed_oxygen_detection,start_compressed_oxygen_detection
-from globals import inference_thread, stop_event,lock,redis_client
 
+from flask import Flask, jsonify
+
+import multiprocessing as mp
+from config import VIDEO_SOURCE,MODEL_PATH
+from compressed_oxygen_detect import process_video
 #焊接考核的穿戴
 app = Flask(__name__)
 
+# 全局变量
+processes = []
+stop_event = mp.Event()
+#mp.Array性能较高，适合大量写入的场景
+steps = mp.Array('b', [False] * 6)  # 创建一个长度为12的共享数组，并初始化为False,用于在多个线程中间传递变量
+#mp.Value适合单个值的场景，性能较慢
+manager = mp.Manager()
+order = manager.list()#用于存储各个步骤的顺序
 
+def reset_shared_variables():
+    # 1. 重置 equipment_cleaning_flag
+    for i in range(len(steps)):
+        steps[i] = False
+    
+    # 2. 清空 equipment_cleaning_order
+    order[:] = []  # 使用切片来清空 ListProxy
 # Define the /wearing_detection endpoint
 @app.route('/compressed_oxygen_detection', methods=['GET'])
 def compressed_oxygen_detection():
-    global inference_thread#当全局变量需要重新赋值时，需要用global关键字声明
 
-    if inference_thread is None or not inference_thread.is_alive():
-        stop_event.clear()#stop_event不用global声明，因为不需要重新赋值，他只是调用了其方法，并没有重新赋值
+    if not any(p.is_alive() for p in processes):  # 防止重复开启检测服务
+        stop_event.clear()
+
+        # 使用本地的 start_events 列表，不使用 Manager
+        start_events = []  # 存储每个进程的启动事件
+
         
-        start_events = []#给每个线程一个事件，让我知道某个线程是否开始检测
-        inference_thread = threading.Thread(target=start_compressed_oxygen_detection,args=(start_events,))
-        inference_thread.start()
-        init_compressed_oxygen_detection()
+        # 启动多个进程进行设备清洗检测
+        #for model_path, video_source in zip(MODEL_PATH, VIDEO_SOURCE):
+        start_event = mp.Event()  # 为每个进程创建一个独立的事件
+        start_events.append(start_event)  # 加入 start_events 列表
 
-        # 等待所有YOLO线程开始检测，两个线程检测完毕时，才返回SUCCESS
+        process = mp.Process(target=process_video, args=(MODEL_PATH, VIDEO_SOURCE, start_event, stop_event, steps, order))
+        processes.append(process)
+        process.start()
+        print("自救器检测子进程运行中")
+
+        app.logger.info('start_equipment_cleaning_detection')
+        reset_shared_variables()
+
+        # 等待所有进程的 start_event 被 set
         for event in start_events:
-            event.wait()
+            event.wait()  # 等待每个进程通知它已经成功启动
 
-        app.logger.info('start_compressed_oxygen_detection')
         return jsonify({"status": "SUCCESS"}), 200
-    
+
     else:
-        app.logger.info("start_compressed_oxygen_detection already running")   
+        app.logger.info("reset_detection already running")
         return jsonify({"status": "ALREADY_RUNNING"}), 200
+
     
 
 
 @app.route('/compressed_oxygen_status', methods=['GET']) 
 def compressed_oxygen_status():#开始登录时，检测是否需要复位，若需要，则发送复位信息，否则开始焊接检测
-    #global inference_thread
-    if not redis_client.exists('compressed_oxygen_order'):
+    if len(order)==0:
         app.logger.info('compressed_oxygen_order is none')
 
         return jsonify({"status": "NONE"}), 200
     
     else:           
-        compressed_oxygen_order = redis_client.lrange("compressed_oxygen_order", 0, -1)
         json_array = []
-        for step in compressed_oxygen_order:
+        for step in order:
             json_object = {"step": step}
             json_array.append(json_object)
 
@@ -54,18 +79,25 @@ def compressed_oxygen_status():#开始登录时，检测是否需要复位，若
 
                
 @app.route('/end_compressed_oxygen_detection', methods=['GET'])
-def end_wearing_exam():
-    init_compressed_oxygen_detection()
+def end_compressed_oxygen_detection():
+    #init_compressed_oxygen_detection()
+    stop_inference_internal()
     return jsonify({"status": "SUCCESS"}), 200
 
     
 
+#停止多进程函数的写法
 def stop_inference_internal():
-    global inference_thread
-    if inference_thread is not None and inference_thread.is_alive():
-        stop_event.set()  # 设置停止事件标志，通知推理线程停止运行
-        inference_thread.join()  # 等待推理线程结束
-        inference_thread = None  # 释放线程资源
+    global processes
+    if processes:  # 检查是否有子进程正在运行
+        stop_event.set()  # 设置停止事件标志，通知所有子进程停止运行
+        # 等待所有子进程结束
+        for process in processes:
+            if process.is_alive():
+                process.join()  # 等待每个子进程结束
+                print("自救器子进程运行结束")
+        
+        processes = []  # 清空进程列表，释放资源
         app.logger.info('detection stopped')
         return True
     else:
@@ -82,14 +114,8 @@ def stop_inference():
         app.logger.info('No_detection_running')
         return jsonify({"status": "No_detection_running"}), 200
 
-# @app.route('/images/<filename>')
-# def get_image(filename):
-#     app.logger.info('get_image'+filename)
-#     #pdb.set_trace()
-#     return send_from_directory('static/images', filename)
 
 
 if __name__ == '__main__':
-
     # Start the Flask server
     app.run(debug=False, host='127.0.0.1', port=5007)
