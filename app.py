@@ -11,7 +11,7 @@ app = Flask(__name__)
 processes = []
 stop_event = mp.Event()
 #mp.Array性能较高，适合大量写入的场景
-steps = mp.Array('b', [False] * 6)  # 创建一个长度为12的共享数组，并初始化为False,用于在多个线程中间传递变量
+steps = mp.Array('b', [False] * 6)  
 #mp.Value适合单个值的场景，性能较慢
 manager = mp.Manager()
 order = manager.list()#用于存储各个步骤的顺序
@@ -34,8 +34,7 @@ def compressed_oxygen_detection():
         start_events = []  # 存储每个进程的启动事件
 
         
-        # 启动多个进程进行设备清洗检测
-        #for model_path, video_source in zip(MODEL_PATH, VIDEO_SOURCE):
+
         start_event = mp.Event()  # 为每个进程创建一个独立的事件
         start_events.append(start_event)  # 加入 start_events 列表
 

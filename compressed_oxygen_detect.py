@@ -1,25 +1,9 @@
 import torch
 import cv2
-import threading
 from datetime import datetime
 from ultralytics import YOLO
-from globals import stop_event,redis_client,steps,hand_box,head_box
-from config import VIDEO_SOURCE,MODEL_PATH
+from globals import hand_box,head_box
 
-
-def init_compressed_oxygen_detection():
-    for i, step in enumerate(steps):
-        redis_client.set(f"compressed_oxygen_step_{i+1}",'False')
-    redis_client.delete("compressed_oxygen_order")
-
-def start_compressed_oxygen_detection(start_events):
-        
-    event = threading.Event()
-    start_events.append(event)
-    thread = threading.Thread(target=process_video, args=(MODEL_PATH,VIDEO_SOURCE,event))
-    thread.daemon=True
-    thread.start()
-    thread.join()
 
 def IoU(box1, box2):
     '''
@@ -123,9 +107,6 @@ def process_video(model_path, video_source, start_event,stop_event,steps,order):
                     print("steps[5]:",steps[5])
                     
                 for i, step in enumerate(steps):
-                    # if step and redis_client.get(f"compressed_oxygen_step_{i+1}")=='False':
-                    #     redis_client.rpush("compressed_oxygen_order", f"{i+1}")
-                    #     redis_client.set(f"compressed_oxygen_step_{i+1}",'True')
                     if step and i+1 not in order:
                         order.append(i+1)
 
